@@ -1,0 +1,323 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Persona {
+  radiologist
+  diagnostic_centre_owner
+  teleradiology_founder
+}
+
+enum LeadCrmStatus {
+  NEW
+  ENGAGING
+  CONNECT_APPROVAL
+  CONNECT_PENDING
+  WELCOME_PENDING
+  CONNECTED
+  QUALIFY_PENDING
+  QUALIFIED
+  MANUAL_FOLLOWUP
+  CLOSED
+}
+
+enum CampaignStatus {
+  active
+  paused
+  completed
+}
+
+enum DealStatus {
+  open
+  won
+  lost
+}
+
+enum LogCategory {
+  selector_failure
+  rate_limit
+  daily_limit
+  duplicate_skip
+  manual_rejection
+  template_error
+}
+
+enum ActivityLevel {
+  active
+  inactive
+  unknown
+}
+
+enum ConnectionStatus {
+  none
+  pending
+  accepted
+  withdrawn
+}
+
+enum ActionType {
+  view_profile
+  like_post
+  comment_post
+  connect_request
+  send_message
+  check_connection_status
+  check_reply
+}
+
+// queued -> in_progress -> (success | failed [-> retried as queued, up to a cap] | skipped)
+// pending_approval is the human gate for connect_request/send_message before they become queued.
+// blocked means a human explicitly rejected it in the approval queue.
+enum ActionStatus {
+  pending_approval
+  queued
+  in_progress
+  success
+  failed
+  skipped
+  blocked
+  dead_letter
+}
+
+enum MessageDirection {
+  outbound
+  inbound
+}
+
+enum MessageType {
+  connection_note
+  welcome_message
+  qualification_question
+  follow_up
+  ai_reply
+  manual
+}
+
+enum ReminderStatus {
+  pending
+  done
+  dismissed
+}
+
+model Campaign {
+  id                     String         @id @default(uuid())
+  name                   String
+  keywords               String[]
+  locations              String[]
+  persona                Persona?
+  status                 CampaignStatus @default(active)
+  dailyConnectionLimit   Int            @default(15) @map("daily_connection_limit")
+  dailyMessageLimit      Int            @default(25) @map("daily_message_limit")
+  dailySearchLimit       Int            @default(15) @map("daily_search_limit")
+  minDelaySeconds        Int            @default(20) @map("min_delay_seconds")
+  maxDelaySeconds        Int            @default(90) @map("max_delay_seconds")
+  engagementIntervalHours Int           @default(24) @map("engagement_interval_hours")
+  connectionNoteTemplate String?        @map("connection_note_template")
+  welcomeMessageTemplate String?        @map("welcome_message_template")
+  qualificationQuestions String[]       @map("qualification_questions")
+  followUpTemplate       String?        @map("follow_up_template")
+  industries             String[]       @map("industries")
+  companySizeMin         Int?           @map("company_size_min")
+  companySizeMax         Int?           @map("company_size_max")
+  seniorities            String[]       @map("seniorities")
+  currentCompanies       String[]       @map("current_companies")
+  minActivityLevel       ActivityLevel? @map("min_activity_level")
+  sequenceSteps          Json?          @map("sequence_steps")
+  createdAt              DateTime       @default(now()) @map("created_at")
+  updatedAt               DateTime      @updatedAt @map("updated_at")
+
+  leads       Lead[]
+  searchTasks SearchTask[]
+
+  @@map("campaigns")
+}
+
+model SearchTask {
+  id           String       @id @default(uuid())
+  campaignId   String       @map("campaign_id")
+  keyword      String
+  location     String?
+  status       ActionStatus @default(queued)
+  attempts     Int          @default(0)
+  scheduledAt  DateTime     @default(now()) @map("scheduled_at")
+  executedAt   DateTime?    @map("executed_at")
+  leadsFound   Int?         @map("leads_found")
+  errorMessage String?      @map("error_message")
+
+  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@index([campaignId])
+  @@index([status, scheduledAt])
+  @@map("search_tasks")
+}
+
+model Lead {
+  id                 String           @id @default(uuid())
+  linkedinProfileUrl String           @unique @map("linkedin_profile_url")
+  fullName           String           @map("full_name")
+  headline           String?
+  location           String?
+  company            String?
+  persona            Persona
+  status             LeadCrmStatus    @default(NEW)
+  activityLevel      ActivityLevel    @default(unknown) @map("activity_level")
+  connectionStatus   ConnectionStatus @default(none) @map("connection_status")
+  campaignId         String?          @map("campaign_id")
+  engagementDay      Int              @default(0) @map("engagement_day")
+  nextEngagementAt   DateTime?        @map("next_engagement_at")
+  engagedPostUrls    String[]         @map("engaged_post_urls")
+  meetingBookedAt    DateTime?        @map("meeting_booked_at")
+  industry           String?
+  seniority          String?
+  companySize        Int?             @map("company_size")
+  score              Int?
+  scoreReason        String?          @map("score_reason")
+  dealStatus         DealStatus       @default(open) @map("deal_status")
+  dealValue          Float?           @map("deal_value")
+  firstFoundAt       DateTime         @default(now()) @map("first_found_at")
+  lastSyncedAt       DateTime         @default(now()) @map("last_synced_at")
+  notes              String?
+
+  campaign              Campaign?              @relation(fields: [campaignId], references: [id])
+  profileSnapshots      ProfileSnapshot[]
+  actions               Action[]
+  messages              Message[]
+  qualificationAnswers  QualificationAnswer[]
+  reminders             Reminder[]
+
+  @@index([campaignId])
+  @@index([status, nextEngagementAt])
+  @@map("leads")
+}
+
+model ProfileSnapshot {
+  id               String   @id @default(uuid())
+  leadId           String   @map("lead_id")
+  scrapedAt        DateTime @default(now()) @map("scraped_at")
+  headline         String?
+  aboutText        String?  @map("about_text")
+  currentPosition  String?  @map("current_position")
+  company          String?
+  activitySignals  Json     @map("activity_signals")
+  rawExtract       Json     @map("raw_extract")
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([leadId])
+  @@map("profile_snapshots")
+}
+
+model Action {
+  id            String       @id @default(uuid())
+  leadId        String       @map("lead_id")
+  actionType    ActionType   @map("action_type")
+  status        ActionStatus @default(queued)
+  attempts      Int          @default(0)
+  lastAttemptAt DateTime?    @map("last_attempt_at")
+  scheduledAt   DateTime?    @map("scheduled_at")
+  executedAt    DateTime?    @map("executed_at")
+  details       Json?
+  errorMessage  String?      @map("error_message")
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([leadId])
+  @@index([actionType, executedAt])
+  @@index([status, scheduledAt])
+  @@map("actions")
+}
+
+model Message {
+  id                String           @id @default(uuid())
+  leadId            String           @map("lead_id")
+  direction         MessageDirection
+  messageType       MessageType      @map("message_type")
+  content           String
+  sentAt            DateTime         @default(now()) @map("sent_at")
+  linkedinMessageId String?          @map("linkedin_message_id")
+  aiModelUsed       String?          @map("ai_model_used")
+  aiInputTokens     Int?             @map("ai_input_tokens")
+  aiOutputTokens    Int?             @map("ai_output_tokens")
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([leadId])
+  @@map("messages")
+}
+
+model QualificationAnswer {
+  id             String   @id @default(uuid())
+  leadId         String   @map("lead_id")
+  questionKey    String   @map("question_key")
+  questionText   String   @map("question_text")
+  answerText     String   @map("answer_text")
+  extractedValue Json?    @map("extracted_value")
+  confidence     Float?
+  answeredAt     DateTime @default(now()) @map("answered_at")
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([leadId])
+  @@map("qualification_answers")
+}
+
+model Reminder {
+  id           String         @id @default(uuid())
+  leadId       String         @map("lead_id")
+  reminderType String         @map("reminder_type")
+  dueAt        DateTime       @map("due_at")
+  status       ReminderStatus @default(pending)
+  note         String?
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([leadId])
+  @@index([dueAt, status])
+  @@map("reminders")
+}
+
+model SystemLog {
+  id         String      @id @default(uuid())
+  category   LogCategory
+  message    String
+  leadId     String?     @map("lead_id")
+  campaignId String?     @map("campaign_id")
+  meta       Json?
+  createdAt  DateTime    @default(now()) @map("created_at")
+
+  @@index([category, createdAt])
+  @@map("system_logs")
+}
+
+model SafetyConfig {
+  id                           String   @id @default(uuid())
+  killSwitch                   Boolean  @default(false) @map("kill_switch")
+  connectionRequestsPerDay     Int      @map("connection_requests_per_day")
+  connectionRequestsPerWeek    Int      @map("connection_requests_per_week")
+  likesPerDay                  Int      @map("likes_per_day")
+  commentsPerDay               Int      @map("comments_per_day")
+  messagesPerDay                Int     @map("messages_per_day")
+  profileVisitsPerDay          Int      @map("profile_visits_per_day")
+  searchPagesPerDay            Int      @map("search_pages_per_day")
+  activeHoursStartHour         Int      @map("active_hours_start_hour")
+  activeHoursEndHour           Int      @map("active_hours_end_hour")
+  activeHoursJitterMinutes     Int      @map("active_hours_jitter_minutes")
+  minDelaySeconds              Int      @map("min_delay_seconds")
+  maxDelaySeconds              Int      @map("max_delay_seconds")
+  breakEveryActionsMin         Int      @map("break_every_actions_min")
+  breakEveryActionsMax         Int      @map("break_every_actions_max")
+  breakDurationMinMinutes      Int      @map("break_duration_min_minutes")
+  breakDurationMaxMinutes      Int      @map("break_duration_max_minutes")
+  sessionMaxDurationMinutesMin Int      @map("session_max_duration_minutes_min")
+  sessionMaxDurationMinutesMax Int      @map("session_max_duration_minutes_max")
+  connectionCheckIntervalHours Int      @default(4) @map("connection_check_interval_hours")
+  maxActionAttempts            Int      @default(3) @map("max_action_attempts")
+  updatedAt                    DateTime @updatedAt @map("updated_at")
+
+  @@map("safety_config")
+}

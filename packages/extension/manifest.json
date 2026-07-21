@@ -1,0 +1,42 @@
+{
+  "manifest_version": 3,
+  "name": "LinkedIn Lead-Gen Assistant",
+  "version": "0.1.0",
+  "description": "Local lead-gen assistant for radiologist/diagnostic-centre/teleradiology outreach on LinkedIn.",
+  "action": {
+    "default_popup": "src/popup/index.html"
+  },
+  "background": {
+    "service_worker": "src/background/index.ts",
+    "type": "module"
+  },
+  "permissions": ["storage", "alarms", "scripting", "activeTab", "tabs", "notifications"],
+  "host_permissions": ["https://www.linkedin.com/*", "http://localhost:4000/*"],
+  "content_scripts": [
+    {
+      "matches": ["https://www.linkedin.com/search/results/people*"],
+      "js": ["src/content/search-scraper.ts"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://www.linkedin.com/in/*"],
+      "js": ["src/content/profile.ts"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://www.linkedin.com/mynetwork/invitation-manager/*"],
+      "js": ["src/content/network-invitations.ts"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://www.linkedin.com/messaging/*"],
+      "js": ["src/content/messaging.ts"],
+      "run_at": "document_idle"
+    }
+  ],
+  "icons": {
+    "16": "public/icons/icon16.png",
+    "48": "public/icons/icon48.png",
+    "128": "public/icons/icon128.png"
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "name": "linkedin-extension",
+  "private": true,
+  "version": "0.1.0",
+  "packageManager": "pnpm@11.14.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev:backend": "pnpm --filter @lgx/backend dev",
+    "dev:dashboard": "pnpm --filter @lgx/dashboard dev",
+    "build:extension": "pnpm --filter @lgx/extension build",
+    "build": "pnpm -r build",
+    "lint": "pnpm -r lint",
+    "typecheck": "pnpm -r typecheck"
+  }
+}
