@@ -4,3 +4,4 @@ dist/
 *.log
 .DS_Store
 packages/backend/src/generated/
+.vercel
