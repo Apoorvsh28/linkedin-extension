@@ -14,7 +14,7 @@ import type {
   SystemLogListResponseDto,
 } from "@lgx/shared";
 
-const BASE_URL = "http://localhost:4000/api";
+const BASE_URL = "https://leadgen.xcentic.com/api";
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${BASE_URL}${path}`, {
