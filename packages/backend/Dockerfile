@@ -1,0 +1,16 @@
+FROM node:20-alpine
+
+RUN corepack enable && corepack prepare pnpm@11.14.0 --activate
+
+WORKDIR /app
+
+COPY . .
+
+RUN pnpm install --frozen-lockfile
+RUN pnpm --filter @lgx/backend prisma:generate
+
+WORKDIR /app/packages/backend
+
+EXPOSE 5000
+
+CMD ["pnpm", "dev"]
