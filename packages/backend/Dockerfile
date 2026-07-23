@@ -11,6 +11,6 @@ RUN pnpm --filter @lgx/backend prisma:generate
 
 WORKDIR /app/packages/backend
 
-EXPOSE 5000
+EXPOSE 5001
 
 CMD ["pnpm", "dev"]

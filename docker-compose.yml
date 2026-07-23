@@ -29,9 +29,9 @@ services:
     environment:
       DATABASE_URL: postgresql://lgx:lgx@postgres:5432/leadsdb
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
-      PORT: 5000
+      PORT: 5001
     ports:
-      - "5000:5000"
+      - "5001:5001"
     command: sh -c "pnpm prisma:migrate:deploy && pnpm dev"
     volumes:
       - ./packages/backend/src:/app/packages/backend/src
