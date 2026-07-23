@@ -18,7 +18,11 @@ export function createApp(): express.Express {
 
   app.use(
     cors({
-      origin: [/^http:\/\/localhost:\d+$/, /^chrome-extension:\/\//],
+      origin: [
+        /^http:\/\/localhost:\d+$/,
+        /^chrome-extension:\/\//,
+        "https://dashboard.leadgen.xcentic.com",
+      ],
     }),
   );
   app.use(express.json());
