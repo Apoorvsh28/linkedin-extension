@@ -7,7 +7,7 @@ services:
       POSTGRES_PASSWORD: lgx
       POSTGRES_DB: leadsdb
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - lgx_postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -15,6 +15,8 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+    networks:
+      - lgx_network
 
   backend:
     build:
@@ -36,7 +38,13 @@ services:
       - ./packages/backend/prisma:/app/packages/backend/prisma
       - ./packages/shared/src:/app/packages/shared/src
       - lgx_backend_node_modules:/app/node_modules
+    networks:
+      - lgx_network
 
 volumes:
   lgx_postgres_data:
   lgx_backend_node_modules:
+
+networks:
+  lgx_network:
+    driver: bridge
