@@ -16,15 +16,7 @@ import { errorHandler } from "./middleware/errorHandler.js";
 export function createApp(): express.Express {
   const app = express();
 
-  app.use(
-    cors({
-      origin: [
-        /^http:\/\/localhost:\d+$/,
-        /^chrome-extension:\/\//,
-        "https://dashboard.leadgen.xcentic.com",
-      ],
-    }),
-  );
+  app.use(cors());
   app.use(express.json());
 
   app.get("/api/health", (_req, res) => {
