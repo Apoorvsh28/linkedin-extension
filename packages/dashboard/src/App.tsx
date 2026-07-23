@@ -3,6 +3,7 @@ import { NavLink, Route, Routes } from "react-router-dom";
 import {
   Activity,
   BarChart3,
+  LogOut,
   Layers,
   Megaphone,
   MessageSquare,
@@ -22,7 +23,7 @@ import { MessagesPage } from "./pages/MessagesPage.js";
 import { AnalyticsPage } from "./pages/AnalyticsPage.js";
 import { QueuesPage } from "./pages/QueuesPage.js";
 import { SettingsPage } from "./pages/SettingsPage.js";
-import { api } from "./lib/api.js";
+import { api, auth } from "./lib/api.js";
 import { applyTheme, getStoredTheme, type ThemePreference } from "./lib/theme.js";
 
 const NAV_ITEMS = [
@@ -43,7 +44,7 @@ const NAV_ITEMS = [
   ] },
 ];
 
-export function App() {
+export function App({ onLogout }: { onLogout: () => void }) {
   const [theme, setTheme] = useState<ThemePreference>(getStoredTheme());
   const [killSwitch, setKillSwitch] = useState<boolean | null>(null);
   const [stopping, setStopping] = useState(false);
@@ -134,6 +135,16 @@ export function App() {
             Emergency stop
           </button>
           {stopResult && <div className="emergency-note">{stopResult}</div>}
+
+          <button
+            onClick={() => {
+              auth.clearToken();
+              onLogout();
+            }}
+          >
+            <LogOut size={14} />
+            Log out
+          </button>
         </div>
       </nav>
       <main className="content">

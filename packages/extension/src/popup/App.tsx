@@ -23,7 +23,7 @@ const STATUS_LABEL: Record<string, string> = {
   error: "Error",
 };
 
-const DASHBOARD_URL = "http://localhost:5174";
+const DASHBOARD_URL = "https://dashboard.leadgen.xcentic.com";
 
 export function App() {
   const [config, setConfig] = useState<SafetyConfigRecordDto | null>(null);

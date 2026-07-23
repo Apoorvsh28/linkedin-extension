@@ -11,6 +11,7 @@ import { engineRouter } from "./routes/engine.routes.js";
 import { analyticsRouter } from "./routes/analytics.routes.js";
 import { queuesRouter } from "./routes/queues.routes.js";
 import { logsRouter } from "./routes/logs.routes.js";
+import { authRouter } from "./routes/auth.routes.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 
 export function createApp(): express.Express {
@@ -23,6 +24,7 @@ export function createApp(): express.Express {
     res.json({ ok: true });
   });
 
+  app.use("/api/auth", authRouter);
   app.use("/api/leads/:leadId/messages", messagesRouter);
   app.use("/api/leads", leadsRouter);
   app.use("/api/actions", actionsRouter);

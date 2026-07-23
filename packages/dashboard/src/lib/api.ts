@@ -15,12 +15,26 @@ import type {
 } from "@lgx/shared";
 
 const BASE_URL = "https://leadgen.xcentic.com/api";
+const TOKEN_KEY = "lgx_token";
+
+export const auth = {
+  getToken: () => localStorage.getItem(TOKEN_KEY),
+  setToken: (token: string) => localStorage.setItem(TOKEN_KEY, token),
+  clearToken: () => localStorage.removeItem(TOKEN_KEY),
+};
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const token = auth.getToken();
   const res = await fetch(`${BASE_URL}${path}`, {
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
     ...init,
   });
+  if (res.status === 401) {
+    auth.clearToken();
+  }
   if (!res.ok) {
     const body = await res.text().catch(() => "");
     throw new Error(`API ${init?.method ?? "GET"} ${path} -> ${res.status}: ${body}`);
@@ -55,6 +69,14 @@ export interface CampaignInput {
 }
 
 export const api = {
+  login: (email: string, password: string) =>
+    request<{ token: string; email: string }>("/auth/login", {
+      method: "POST",
+      body: JSON.stringify({ email, password }),
+    }),
+
+  me: () => request<{ email: string }>("/auth/me"),
+
   listLeads: (params: Record<string, string> = {}) =>
     request<LeadListResponseDto>(`/leads?${new URLSearchParams(params)}`),
 

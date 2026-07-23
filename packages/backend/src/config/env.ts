@@ -12,4 +12,7 @@ export const env = {
   port: Number(process.env.PORT ?? 4000),
   databaseUrl: required("DATABASE_URL"),
   anthropicApiKey: process.env.ANTHROPIC_API_KEY ?? "",
+  adminEmail: required("ADMIN_EMAIL"),
+  adminPassword: required("ADMIN_PASSWORD"),
+  authSecret: process.env.AUTH_SECRET ?? required("ADMIN_PASSWORD"),
 };

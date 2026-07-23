@@ -935,6 +935,22 @@ td.num,
   margin: 20px 0;
 }
 
+/* ===== Login ===== */
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--page);
+  padding: 20px;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 340px;
+  margin: 0;
+}
+
 .pill-checkbox {
   display: flex;
   align-items: center;

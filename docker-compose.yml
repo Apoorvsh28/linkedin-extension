@@ -29,6 +29,9 @@ services:
     environment:
       DATABASE_URL: postgresql://lgx:lgx@postgres:5432/leadsdb
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:?ADMIN_EMAIL must be set in .env}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?ADMIN_PASSWORD must be set in .env}
+      AUTH_SECRET: ${AUTH_SECRET:-}
       PORT: 5001
     ports:
       - "5001:5001"
